@@ -7,6 +7,16 @@ namespace GameBackupManager.App
 {
     internal sealed class Program
     {
+        #region Constants
+
+#if DEBUG
+        public const bool EnableStartupLogging = true;
+#else
+        public const bool EnableStartupLogging = false;
+#endif
+
+        #endregion Constants
+
         #region Public Methods
 
         // Avalonia configuration, don't remove; also used by visual designer.
