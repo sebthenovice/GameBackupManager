@@ -6,4 +6,5 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="GameBackupManager.App/GameBackupManager.App.csproj" />
+  <Project Path="GameBackupManager.Tests/GameBackupManager.Tests.csproj" Id="48c336d7-2573-423d-a4a0-d0d4c9356746" />
 </Solution>
