@@ -15,12 +15,24 @@ namespace GameBackupManager.App
     {
         #region Fields
 
-        private ILoggerFactory? _loggerFactory;
         private bool _disposed;
+        private ILoggerFactory? _loggerFactory;
 
         #endregion Fields
 
+        #region Properties
+
+        public ObservableCollection<string> AvailableThemes { get; } = new ObservableCollection<string>();
+
+        #endregion Properties
+
         #region Public Methods
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         public override void Initialize()
         {
@@ -40,6 +52,17 @@ namespace GameBackupManager.App
             var logger = _loggerFactory.CreateLogger<App>();
             var configService = new JsonConfigurationService(_loggerFactory.CreateLogger<JsonConfigurationService>());
             var backupService = new BackupService(_loggerFactory.CreateLogger<BackupService>(), configService);
+
+            // Apply saved theme early so window shows with correct theme immediately
+            try
+            {
+                var settings = configService.LoadAppSettingsAsync().GetAwaiter().GetResult();
+                SetTheme(settings.Theme);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Unable to load app settings at startup; continuing with defaults.");
+            }
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -61,15 +84,49 @@ namespace GameBackupManager.App
             base.OnFrameworkInitializationCompleted();
         }
 
+        // Public API for switching theme at runtime
+        public void SetTheme(string? theme)
+        {
+            if (string.IsNullOrWhiteSpace(theme))
+                return;
+
+            Styles.Clear();
+
+            if (string.Equals(theme, "Light", StringComparison.OrdinalIgnoreCase))
+            {
+                Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://GameBackupManager.App/Styles/LightTheme.axaml"))
+                {
+                    Source = new Uri("avares://GameBackupManager.App/Styles/LightTheme.axaml")
+                });
+            }
+            else if (string.Equals(theme, "Dark", StringComparison.OrdinalIgnoreCase))
+            {
+                Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://GameBackupManager.App/Styles/DarkTheme.axaml"))
+                {
+                    Source = new Uri("avares://GameBackupManager.App/Styles/DarkTheme.axaml")
+                });
+            }
+            else
+            {
+                // attempt to load a theme file matching the provided name
+                var candidate = $"avares://GameBackupManager.App/Styles/{theme}.axaml";
+                try
+                {
+                    Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri(candidate))
+                    {
+                        Source = new Uri(candidate)
+                    });
+                }
+                catch
+                {
+                    // ignore invalid theme names
+                }
+            }
+        }
+
         #endregion Public Methods
 
-        #region IDisposable Implementation
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        #region Protected Methods
 
         protected virtual void Dispose(bool disposing)
         {
@@ -78,7 +135,7 @@ namespace GameBackupManager.App
                 if (disposing)
                 {
                     _loggerFactory?.Dispose();
-                    
+
                     // Unsubscribe from events
                     if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                     {
@@ -90,16 +147,9 @@ namespace GameBackupManager.App
             }
         }
 
-        private void OnApplicationExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
-        {
-            Dispose();
-        }
+        #endregion Protected Methods
 
-        #endregion IDisposable Implementation
-
-        #region Theme Management
-
-        public ObservableCollection<string> AvailableThemes { get; } = new ObservableCollection<string>();
+        #region Private Methods
 
         private void LoadAvailableThemes()
         {
@@ -117,6 +167,11 @@ namespace GameBackupManager.App
             }
         }
 
-        #endregion Theme Management
+        private void OnApplicationExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+        {
+            Dispose();
+        }
+
+        #endregion Private Methods
     }
 }

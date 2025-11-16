@@ -215,4 +215,27 @@
         <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
     </Style>
+
+    <!-- Styles for the popup list and items inside a ComboBox to avoid white-on-white text -->
+    <Style Selector="ComboBox ListBox">
+        <Setter Property="Background" Value="{StaticResource SurfaceColor}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+    </Style>
+
+    <Style Selector="ComboBox ListBoxItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+        <Setter Property="Padding" Value="8,6"/>
+    </Style>
+
+    <Style Selector="ComboBox ListBoxItem:pointerover">
+        <Setter Property="Background" Value="#40444B"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+    </Style>
+
+    <Style Selector="ComboBox ListBoxItem:selected">
+        <Setter Property="Background" Value="#34373C"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+    </Style>
 </Styles>

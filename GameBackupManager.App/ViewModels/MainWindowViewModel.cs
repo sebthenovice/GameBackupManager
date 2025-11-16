@@ -6,9 +6,11 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Markup.Xaml.Styling;
+using System.ComponentModel;
 
 namespace GameBackupManager.App.ViewModels
 {
@@ -20,8 +22,16 @@ namespace GameBackupManager.App.ViewModels
         private readonly JsonConfigurationService _configService;
         private readonly ILogger<MainWindowViewModel> _logger;
 
+        // Track previous AppSettings instance so we can unsubscribe PropertyChanged
+        private AppSettings? _previousAppSettings;
+
+        // Debounce token for saving settings when theme changes
+        private CancellationTokenSource? _themeSaveCts;
+
         [ObservableProperty]
         private AppSettings appSettings = new();
+
+        private ObservableCollection<string> availableThemes = new ObservableCollection<string> { "Light", "Dark" };
 
         [ObservableProperty]
         private ObservableCollection<GameViewModel> games = new();
@@ -37,18 +47,6 @@ namespace GameBackupManager.App.ViewModels
 
         [ObservableProperty]
         private string statusMessage = "Ready";
-
-        private ObservableCollection<string> availableThemes = new ObservableCollection<string> { "Light", "Dark" };
-
-        public ObservableCollection<string> AvailableThemes
-        {
-            get => availableThemes;
-            set
-            {
-                availableThemes = value;
-                OnPropertyChanged(nameof(AvailableThemes));
-            }
-        }
 
         #endregion Fields
 
@@ -79,6 +77,16 @@ namespace GameBackupManager.App.ViewModels
 
         #region Properties
 
+        public ObservableCollection<string> AvailableThemes
+        {
+            get => availableThemes;
+            set
+            {
+                availableThemes = value;
+                OnPropertyChanged(nameof(AvailableThemes));
+            }
+        }
+
         public IAsyncRelayCommand CreateBackupCommand { get; }
         public IAsyncRelayCommand LoadDataCommand { get; }
         public IAsyncRelayCommand RefreshGamesCommand { get; }
@@ -88,7 +96,33 @@ namespace GameBackupManager.App.ViewModels
 
         #endregion Properties
 
+        #region Public Methods
+
+        [RelayCommand]
+        public void ToggleOptionsMenu()
+        {
+            ShowOptionsMenu = !ShowOptionsMenu;
+        }
+
+        #endregion Public Methods
+
         #region Private Methods
+
+        // Subscribe/unsubscribe to AppSettings.PropertyChanged so we can react when Theme changes
+        private void AppSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e?.PropertyName == nameof(AppSettings.Theme) && sender is AppSettings settings)
+            {
+                // Delegate theme switching to App so styles persist across the application's lifetime
+                if (Application.Current is App app)
+                {
+                    app.SetTheme(settings.Theme);
+                }
+
+                // Debounced save to avoid many disk writes when user toggles rapidly
+                DebounceSaveSettings();
+            }
+        }
 
         private async Task CreateBackupAsync(GameViewModel? gameViewModel)
         {
@@ -119,6 +153,58 @@ namespace GameBackupManager.App.ViewModels
             finally
             {
                 IsBusy = false;
+            }
+        }
+
+        private void DebounceSaveSettings(int millisecondsDelay = 500)
+        {
+            _themeSaveCts?.Cancel();
+            _themeSaveCts = new CancellationTokenSource();
+            var ct = _themeSaveCts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(millisecondsDelay, ct);
+                    await SaveSettingsAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignored - new change arrived
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error saving settings after theme change");
+                }
+            }, ct);
+        }
+
+        private void LoadAvailableThemes()
+        {
+            try
+            {
+                // Clear existing themes
+                AvailableThemes.Clear();
+
+                // Load themes from the Styles directory
+                var lightThemePath = "avares://GameBackupManager.App/Styles/LightTheme.axaml";
+                var darkThemePath = "avares://GameBackupManager.App/Styles/DarkTheme.axaml";
+
+                // Add themes to the collection
+                if (!string.IsNullOrEmpty(lightThemePath))
+                {
+                    AvailableThemes.Add("Light");
+                }
+
+                if (!string.IsNullOrEmpty(darkThemePath))
+                {
+                    AvailableThemes.Add("Dark");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading available themes");
             }
         }
 
@@ -154,6 +240,29 @@ namespace GameBackupManager.App.ViewModels
             {
                 IsBusy = false;
             }
+        }
+
+        partial void OnAppSettingsChanged(AppSettings value)
+        {
+            // Unsubscribe previous
+            if (_previousAppSettings != null)
+            {
+                _previousAppSettings.PropertyChanged -= AppSettings_PropertyChanged;
+            }
+
+            // Subscribe new
+            if (value != null)
+            {
+                value.PropertyChanged += AppSettings_PropertyChanged;
+
+                // Ensure App matches settings (in case App didn't already apply)
+                if (Application.Current is App app)
+                {
+                    app.SetTheme(value.Theme);
+                }
+            }
+
+            _previousAppSettings = value;
         }
 
         private async Task RefreshGameBackupsAsync(GameViewModel gameViewModel)
@@ -259,12 +368,6 @@ namespace GameBackupManager.App.ViewModels
             _ = UpdateActiveGamesAsync();
         }
 
-        [RelayCommand]
-        public void ToggleOptionsMenu()
-        {
-            ShowOptionsMenu = !ShowOptionsMenu;
-        }
-
         private async Task UpdateActiveGamesAsync()
         {
             try
@@ -280,62 +383,6 @@ namespace GameBackupManager.App.ViewModels
             {
                 _logger.LogError(ex, "Error updating active games");
             }
-        }
-
-        private void ApplyTheme(string theme)
-        {
-            if (Application.Current is App app)
-            {
-                app.Styles.Clear();
-
-                if (theme == "Light")
-                {
-                    app.Styles.Add(new StyleInclude(new Uri("avares://GameBackupManager.App/Styles/LightTheme.axaml", UriKind.Absolute))
-                    {
-                        Source = new Uri("avares://GameBackupManager.App/Styles/LightTheme.axaml", UriKind.Absolute)
-                    });
-                }
-                else if (theme == "Dark")
-                {
-                    app.Styles.Add(new StyleInclude(new Uri("avares://GameBackupManager.App/Styles/DarkTheme.axaml", UriKind.Absolute))
-                    {
-                        Source = new Uri("avares://GameBackupManager.App/Styles/DarkTheme.axaml", UriKind.Absolute)
-                    });
-                }
-            }
-        }
-
-        private void LoadAvailableThemes()
-        {
-            try
-            {
-                // Clear existing themes
-                AvailableThemes.Clear();
-
-                // Load themes from the Styles directory
-                var lightThemePath = "avares://GameBackupManager.App/Styles/LightTheme.axaml";
-                var darkThemePath = "avares://GameBackupManager.App/Styles/DarkTheme.axaml";
-
-                // Add themes to the collection
-                if (!string.IsNullOrEmpty(lightThemePath))
-                {
-                    AvailableThemes.Add("Light");
-                }
-
-                if (!string.IsNullOrEmpty(darkThemePath))
-                {
-                    AvailableThemes.Add("Dark");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading available themes");
-            }
-        }
-
-        partial void OnAppSettingsChanged(AppSettings value)
-        {
-            ApplyTheme(value.Theme);
         }
 
         #endregion Private Methods
