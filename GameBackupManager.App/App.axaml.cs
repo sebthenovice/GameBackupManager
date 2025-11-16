@@ -6,6 +6,8 @@ using GameBackupManager.App.ViewModels;
 using GameBackupManager.App.Views;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.ObjectModel;
+using System.IO;
 
 namespace GameBackupManager.App
 {
@@ -54,6 +56,8 @@ namespace GameBackupManager.App
                 desktop.Exit += OnApplicationExit;
             }
 
+            LoadAvailableThemes();
+
             base.OnFrameworkInitializationCompleted();
         }
 
@@ -92,5 +96,27 @@ namespace GameBackupManager.App
         }
 
         #endregion IDisposable Implementation
+
+        #region Theme Management
+
+        public ObservableCollection<string> AvailableThemes { get; } = new ObservableCollection<string>();
+
+        private void LoadAvailableThemes()
+        {
+            var themesDirectory = Path.Combine(AppContext.BaseDirectory, "Styles");
+            if (Directory.Exists(themesDirectory))
+            {
+                foreach (var themeFile in Directory.GetFiles(themesDirectory, "*.axaml"))
+                {
+                    var themeName = Path.GetFileNameWithoutExtension(themeFile);
+                    if (!AvailableThemes.Contains(themeName))
+                    {
+                        AvailableThemes.Add(themeName);
+                    }
+                }
+            }
+        }
+
+        #endregion Theme Management
     }
 }

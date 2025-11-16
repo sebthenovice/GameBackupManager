@@ -7,6 +7,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Markup.Xaml.Styling;
 
 namespace GameBackupManager.App.ViewModels
 {
@@ -60,6 +62,8 @@ namespace GameBackupManager.App.ViewModels
             _configService = configService;
             _backupService = backupService;
             _logger = logger;
+
+            LoadAvailableThemes();
 
             LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
             CreateBackupCommand = new AsyncRelayCommand<GameViewModel>(CreateBackupAsync);
@@ -276,6 +280,62 @@ namespace GameBackupManager.App.ViewModels
             {
                 _logger.LogError(ex, "Error updating active games");
             }
+        }
+
+        private void ApplyTheme(string theme)
+        {
+            if (Application.Current is App app)
+            {
+                app.Styles.Clear();
+
+                if (theme == "Light")
+                {
+                    app.Styles.Add(new StyleInclude(new Uri("avares://GameBackupManager.App/Styles/LightTheme.axaml", UriKind.Absolute))
+                    {
+                        Source = new Uri("avares://GameBackupManager.App/Styles/LightTheme.axaml", UriKind.Absolute)
+                    });
+                }
+                else if (theme == "Dark")
+                {
+                    app.Styles.Add(new StyleInclude(new Uri("avares://GameBackupManager.App/Styles/DarkTheme.axaml", UriKind.Absolute))
+                    {
+                        Source = new Uri("avares://GameBackupManager.App/Styles/DarkTheme.axaml", UriKind.Absolute)
+                    });
+                }
+            }
+        }
+
+        private void LoadAvailableThemes()
+        {
+            try
+            {
+                // Clear existing themes
+                AvailableThemes.Clear();
+
+                // Load themes from the Styles directory
+                var lightThemePath = "avares://GameBackupManager.App/Styles/LightTheme.axaml";
+                var darkThemePath = "avares://GameBackupManager.App/Styles/DarkTheme.axaml";
+
+                // Add themes to the collection
+                if (!string.IsNullOrEmpty(lightThemePath))
+                {
+                    AvailableThemes.Add("Light");
+                }
+
+                if (!string.IsNullOrEmpty(darkThemePath))
+                {
+                    AvailableThemes.Add("Dark");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading available themes");
+            }
+        }
+
+        partial void OnAppSettingsChanged(AppSettings value)
+        {
+            ApplyTheme(value.Theme);
         }
 
         #endregion Private Methods

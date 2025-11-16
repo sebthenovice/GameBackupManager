@@ -28,7 +28,11 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <AvaloniaXaml Remove="Styles\AppStyles.axaml" />
+    <AvaloniaXaml Remove="Styles\DarkTheme.axaml" />
+    <AvaloniaXaml Remove="Styles\LightTheme.axaml" />
     <AvaloniaResource Include="Styles\AppStyles.axaml" />
+    <AvaloniaResource Include="Styles\DarkTheme.axaml" />
+    <AvaloniaResource Include="Styles\LightTheme.axaml" />
   </ItemGroup>
 
   <ItemGroup>

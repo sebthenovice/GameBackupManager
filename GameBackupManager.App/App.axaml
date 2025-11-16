@@ -11,5 +11,7 @@
   
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://GameBackupManager.App/Styles/LightTheme.axaml" />
+        <StyleInclude Source="avares://GameBackupManager.App/Styles/DarkTheme.axaml" />
     </Application.Styles>
 </Application>

@@ -51,11 +51,8 @@
                           Foreground="#FFFFFF"/>
             </StackPanel>
 
-            <StackPanel Grid.Column="2" 
-                       Orientation="Horizontal" 
-                       VerticalAlignment="Center" 
-                       Margin="0,0,20,0" 
-                       Spacing="10">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0" Spacing="10">
+                <ComboBox Width="120" SelectedItem="{Binding AppSettings.Theme, Mode=TwoWay}" ItemsSource="{Binding AvailableThemes}"/>
                 <Button Classes="IconButton"
                         ToolTip.Tip="Refresh Games"
                         Command="{Binding RefreshGamesCommand}">
