@@ -93,7 +93,7 @@ namespace GameBackupManager.App.Services
                     return new BackupResult { Success = false, Message = "Save path does not exist" };
                 }
 
-                var settings = await _configService.LoadAppSettingsAsync();
+                var settings = await _configService.LoadAppSettingsAsync().ConfigureAwait(false);
                 var backupFolderName = game.BackupFolderName ?? game.GameTitle.Replace(" ", "_").ToLower();
                 var backupPath = Path.Combine(settings.BackupLocation, backupFolderName);
 
@@ -108,16 +108,16 @@ namespace GameBackupManager.App.Services
                 if (settings.BackupCompression)
                 {
                     backupFilePath = Path.Combine(backupPath, $"{backupName}.zip");
-                    await CreateCompressedBackup(game.SavePath, backupFilePath);
+                    await CreateCompressedBackup(game.SavePath, backupFilePath).ConfigureAwait(false);
                 }
                 else
                 {
                     backupFilePath = Path.Combine(backupPath, backupName);
-                    await CreateDirectoryBackup(game.SavePath, backupFilePath);
+                    await CreateDirectoryBackup(game.SavePath, backupFilePath).ConfigureAwait(false);
                 }
 
                 // Clean up old backups
-                await CleanupOldBackups(backupPath, settings.MaxBackupCount);
+                await CleanupOldBackups(backupPath, settings.MaxBackupCount).ConfigureAwait(false);
 
                 return new BackupResult
                 {
@@ -136,7 +136,7 @@ namespace GameBackupManager.App.Services
 
         public async Task<List<BackupInfo>> GetAvailableBackupsAsync(GameDefinition game)
         {
-            var settings = await _configService.LoadAppSettingsAsync();
+            var settings = await _configService.LoadAppSettingsAsync().ConfigureAwait(false);
             var backupFolderName = game.BackupFolderName ?? game.GameTitle.Replace(" ", "_").ToLower();
             var backupPath = Path.Combine(settings.BackupLocation, backupFolderName);
 
@@ -191,7 +191,7 @@ namespace GameBackupManager.App.Services
                 }
 
                 // Create backup of current saves before restoring
-                var currentBackupResult = await CreateBackupAsync(game);
+                var currentBackupResult = await CreateBackupAsync(game).ConfigureAwait(false);
                 if (!currentBackupResult.Success)
                 {
                     _logger.LogWarning("Failed to create current saves backup before restore");
@@ -199,11 +199,11 @@ namespace GameBackupManager.App.Services
 
                 if (Path.GetExtension(backupPath).ToLower() == ".zip")
                 {
-                    await RestoreCompressedBackup(backupPath, game.SavePath);
+                    await RestoreCompressedBackup(backupPath, game.SavePath).ConfigureAwait(false);
                 }
                 else
                 {
-                    await RestoreDirectoryBackup(backupPath, game.SavePath);
+                    await RestoreDirectoryBackup(backupPath, game.SavePath).ConfigureAwait(false);
                 }
 
                 return new BackupResult

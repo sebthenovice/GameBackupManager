@@ -79,6 +79,7 @@ namespace GameBackupManager.App
                 try
                 {
                     LogStartup($"[{DateTime.Now:O}] App.OnFrameworkInitializationCompleted - loading app settings");
+                    // Safe to block here because all awaits in LoadAppSettingsAsync use ConfigureAwait(false)
                     var settings = configService.LoadAppSettingsAsync().GetAwaiter().GetResult();
                     LogStartup($"[{DateTime.Now:O}] App.OnFrameworkInitializationCompleted - app settings loaded, theme={settings.Theme}");
                     

@@ -60,11 +60,11 @@ namespace GameBackupManager.App.Services
                 {
                     _logger.LogInformation("Active games file not found, creating default");
                     var defaultActiveGames = new ActiveGames();
-                    await SaveActiveGamesAsync(defaultActiveGames);
+                    await SaveActiveGamesAsync(defaultActiveGames).ConfigureAwait(false);
                     return defaultActiveGames;
                 }
 
-                var json = await File.ReadAllTextAsync(ActiveGamesPath);
+                var json = await File.ReadAllTextAsync(ActiveGamesPath).ConfigureAwait(false);
                 return JsonSerializer.Deserialize<ActiveGames>(json, _jsonOptions) ?? new ActiveGames();
             }
             catch (Exception ex)
@@ -82,11 +82,11 @@ namespace GameBackupManager.App.Services
                 {
                     _logger.LogInformation("App settings file not found, creating default");
                     var defaultSettings = new AppSettings();
-                    await SaveAppSettingsAsync(defaultSettings);
+                    await SaveAppSettingsAsync(defaultSettings).ConfigureAwait(false);
                     return defaultSettings;
                 }
 
-                var json = await File.ReadAllTextAsync(AppSettingsPath);
+                var json = await File.ReadAllTextAsync(AppSettingsPath).ConfigureAwait(false);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json, _jsonOptions) ?? new AppSettings();
                 settings.EnsureBackupDirectoryExists();
                 return settings;
@@ -106,11 +106,11 @@ namespace GameBackupManager.App.Services
                 {
                     _logger.LogInformation("Games configuration file not found, creating default");
                     var defaultGames = CreateDefaultGameDefinitions();
-                    await SaveGameDefinitionsAsync(defaultGames);
+                    await SaveGameDefinitionsAsync(defaultGames).ConfigureAwait(false);
                     return defaultGames;
                 }
 
-                var json = await File.ReadAllTextAsync(GamesConfigurationPath);
+                var json = await File.ReadAllTextAsync(GamesConfigurationPath).ConfigureAwait(false);
                 var games = JsonSerializer.Deserialize<List<GameDefinition>>(json, _jsonOptions) ?? new List<GameDefinition>();
 
                 // Check installation status for each game
@@ -133,7 +133,7 @@ namespace GameBackupManager.App.Services
             try
             {
                 var json = JsonSerializer.Serialize(activeGames, _jsonOptions);
-                await File.WriteAllTextAsync(ActiveGamesPath, json);
+                await File.WriteAllTextAsync(ActiveGamesPath, json).ConfigureAwait(false);
                 _logger.LogInformation("Active games saved successfully");
             }
             catch (Exception ex)
@@ -148,7 +148,7 @@ namespace GameBackupManager.App.Services
             try
             {
                 var json = JsonSerializer.Serialize(settings, _jsonOptions);
-                await File.WriteAllTextAsync(AppSettingsPath, json);
+                await File.WriteAllTextAsync(AppSettingsPath, json).ConfigureAwait(false);
                 _logger.LogInformation("App settings saved successfully");
             }
             catch (Exception ex)
@@ -163,7 +163,7 @@ namespace GameBackupManager.App.Services
             try
             {
                 var json = JsonSerializer.Serialize(games, _jsonOptions);
-                await File.WriteAllTextAsync(GamesConfigurationPath, json);
+                await File.WriteAllTextAsync(GamesConfigurationPath, json).ConfigureAwait(false);
                 _logger.LogInformation("Game definitions saved successfully");
             }
             catch (Exception ex)
