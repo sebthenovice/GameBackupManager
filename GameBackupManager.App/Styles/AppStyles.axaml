@@ -1,0 +1,198 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Color Palette & Fonts -->
+    <Styles.Resources>
+        <Color x:Key="BackgroundColor">#36393F</Color>
+        <Color x:Key="SurfaceColor">#2B2D31</Color>
+        <Color x:Key="PrimaryColor">#5865F2</Color>
+        <Color x:Key="SecondaryColor">#4F545C</Color>
+        <Color x:Key="SuccessColor">#3BA55D</Color>
+        <Color x:Key="WarningColor">#FAA81A</Color>
+        <Color x:Key="ErrorColor">#ED4245</Color>
+        <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
+        <Color x:Key="TextSecondaryColor">#B9BBBE</Color>
+        <Color x:Key="BorderColor">#202225</Color>
+
+        <FontFamily x:Key="InterFont">Inter, sans-serif</FontFamily>
+    </Styles.Resources>
+
+    <!-- Base Styles -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource BackgroundColor}"/>
+        <Setter Property="FontFamily" Value="{StaticResource InterFont}"/>
+    </Style>
+
+    <Style Selector="TextBlock.HeaderText">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+        <Setter Property="FontFamily" Value="{StaticResource InterFont}"/>
+    </Style>
+
+    <Style Selector="TextBlock.GameTitle">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+        <Setter Property="FontFamily" Value="{StaticResource InterFont}"/>
+    </Style>
+
+    <Style Selector="TextBlock.GamePath">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryColor}"/>
+        <Setter Property="FontFamily" Value="{StaticResource InterFont}"/>
+    </Style>
+
+    <!-- Button Styles -->
+    <Style Selector="Button">
+        <Setter Property="FontFamily" Value="{StaticResource InterFont}"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="Button.Hamburger">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryColor}"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ContentPresenter Name="PART_ContentPresenter"
+                                Background="{TemplateBinding Background}"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"/>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.Hamburger:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceColor}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+    </Style>
+
+    <Style Selector="Button.IconButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryColor}"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ContentPresenter Name="PART_ContentPresenter"
+                                Background="{TemplateBinding Background}"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"/>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.IconButton:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceColor}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryColor}"/>
+    </Style>
+
+    <Style Selector="Button.ActionButton">
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Padding" Value="16,8"/>
+    </Style>
+
+    <Style Selector="Button.ActionButton.Primary">
+        <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <Style Selector="Button.ActionButton.Primary:pointerover">
+        <Setter Property="Background" Value="#4752C4"/>
+    </Style>
+
+    <Style Selector="Button.ActionButton.Secondary">
+        <Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <Style Selector="Button.ActionButton.Secondary:pointerover">
+        <Setter Property="Background" Value="#5D6269"/>
+    </Style>
+
+    <!-- Game Card Styles -->
+    <Style Selector="Border.GameCard">
+        <Setter Property="Background" Value="{StaticResource SurfaceColor}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+        <Setter Property="Margin" Value="10,5"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0.2"/>
+                <BoxShadowsTransition Property="BoxShadow" Duration="0.2"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Border.GameCard:pointerover">
+        <Setter Property="Background" Value="#34373C"/>
+        <Setter Property="BoxShadow" Value="0 4 8 0 #1A1A1A"/>
+    </Style>
+
+    <!-- Status Badge Styles -->
+    <Style Selector="Border.StatusBadge">
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+    </Style>
+
+    <Style Selector="Border.StatusBadge.Installed">
+        <Setter Property="Background" Value="{StaticResource SuccessColor}"/>
+    </Style>
+
+    <Style Selector="Border.StatusBadge.NotFound">
+        <Setter Property="Background" Value="{StaticResource ErrorColor}"/>
+    </Style>
+
+    <!-- Size and Date Badge Styles -->
+    <Style Selector="Border.SizeBadge, Border.DateBadge">
+        <Setter Property="Padding" Value="6,3"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+    </Style>
+
+    <!-- Backup Card Styles -->
+    <Style Selector="Border.BackupCard">
+        <Setter Property="Background" Value="{StaticResource SurfaceColor}"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+        <Setter Property="Margin" Value="10,5"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0.2"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Border.BackupCard:pointerover">
+        <Setter Property="Background" Value="#34373C"/>
+    </Style>
+
+    <!-- CheckBox Styles -->
+    <Style Selector="CheckBox.GameCheckBox">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryColor}"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <!-- ScrollViewer Styles -->
+    <Style Selector="ScrollViewer.GameScrollViewer">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <!-- ProgressBar Styles -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Height" Value="4"/>
+        <Setter Property="CornerRadius" Value="2"/>
+        <Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+        <Setter Property="Foreground" Value="{StaticResource PrimaryColor}"/>
+    </Style>
+</Styles>

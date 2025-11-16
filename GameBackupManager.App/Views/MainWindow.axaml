@@ -1,20 +1,271 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GameBackupManager.App.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:views="using:GameBackupManager.App.Views"
+        xmlns:models="using:GameBackupManager.App.Models"
         x:Class="GameBackupManager.App.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="GameBackupManager.App">
+        Title="Game Backup Manager"
+        Width="1400" 
+        Height="900"
+        MinWidth="800"
+        MinHeight="600"
+        x:DataType="vm:MainWindowViewModel">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Grid Grid.Row="0" Background="#2B2D31" Height="60">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Panel Grid.Column="0" Width="60" Background="#1E1F22">
+                <Button Classes="Hamburger"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Width="40" Height="40"
+                        Command="{Binding ToggleOptionsMenuCommand}">
+                    <PathIcon Data="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                </Button>
+            </Panel>
+            
+            <StackPanel Grid.Column="1" 
+                       VerticalAlignment="Center" 
+                       Margin="20,0">
+                <TextBlock Text="Game Backup Manager" 
+                          Classes="HeaderText"
+                          FontSize="20" 
+                          FontWeight="SemiBold"
+                          Foreground="#FFFFFF"/>
+            </StackPanel>
 
+            <StackPanel Grid.Column="2" 
+                       Orientation="Horizontal" 
+                       VerticalAlignment="Center" 
+                       Margin="0,0,20,0" 
+                       Spacing="10">
+                <Button Classes="IconButton"
+                        ToolTip.Tip="Refresh Games"
+                        Command="{Binding RefreshGamesCommand}">
+                    <PathIcon Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </Button>
+                
+                <Button Classes="IconButton"
+                        ToolTip.Tip="Save Settings"
+                        Command="{Binding SaveSettingsCommand}">
+                    <PathIcon Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="400"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Games List -->
+            <ScrollViewer Grid.Column="0" 
+                         Classes="GameScrollViewer"
+                         VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Games}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="GameCard"
+                                   Margin="10,5"
+                                   PointerPressed="GameCard_PointerPressed">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0" Margin="15">
+                                        <TextBlock Text="{Binding GameTitle}" 
+                                                  Classes="GameTitle"
+                                                  FontSize="16" 
+                                                  FontWeight="SemiBold"
+                                                  Margin="0,0,0,5"/>
+                                        
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Border Classes="StatusBadge {Binding Status}">
+                                                <TextBlock Text="{Binding Status}" 
+                                                          FontSize="12"
+                                                          FontWeight="Medium"/>
+                                            </Border>
+                                            
+                                            <CheckBox IsChecked="{Binding IsActive}" 
+                                                     Classes="GameCheckBox"
+                                                     Content="Active"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="{Binding SavePath}" 
+                                                  Classes="GamePath"
+                                                  FontSize="12"
+                                                  Margin="0,5,0,0"
+                                                  TextWrapping="Wrap"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" 
+                                           Classes="ActionButton Primary"
+                                           Margin="10"
+                                           VerticalAlignment="Center"
+                                           Command="{Binding $parent[Window].DataContext.CreateBackupCommand}"
+                                           CommandParameter="{Binding}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <PathIcon Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                            <TextBlock Text="Backup"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Side Panel -->
+            <Grid Grid.Column="1" Background="#36393F">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Selected Game Header -->
+                <Border Grid.Row="0" 
+                       Background="#2B2D31" 
+                       Height="60"
+                       IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel VerticalAlignment="Center" Margin="15">
+                        <TextBlock Text="{Binding SelectedGame.GameTitle}" 
+                                  FontSize="16" 
+                                  FontWeight="SemiBold"
+                                  Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Backups List -->
+                <ScrollViewer Grid.Row="1" 
+                             VerticalScrollBarVisibility="Auto"
+                             IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <ItemsControl ItemsSource="{Binding SelectedGame.Backups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="BackupCard" Margin="10,5">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <TextBlock Grid.Row="0" 
+                                                  Text="{Binding Name}" 
+                                                  FontWeight="SemiBold"
+                                                  TextTrimming="CharacterEllipsis"/>
+                                        
+                                        <StackPanel Grid.Row="1" 
+                                                   Orientation="Horizontal" 
+                                                   Spacing="10" 
+                                                   Margin="0,5">
+                                            <Border Classes="SizeBadge">
+                                                <TextBlock Text="{Binding FormattedSize}" 
+                                                          FontSize="11"/>
+                                            </Border>
+                                            
+                                            <Border Classes="DateBadge">
+                                                <TextBlock Text="{Binding FormattedDate}" 
+                                                          FontSize="11"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <Button Grid.Row="2" 
+                                               Classes="ActionButton Secondary"
+                                               Margin="0,5,0,0"
+                                               Command="{Binding $parent[Window].DataContext.RestoreBackupCommand}"
+                                               CommandParameter="{Binding}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <PathIcon Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                                <TextBlock Text="Restore"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- No Selection State -->
+                <Border Grid.Row="1" 
+                       Background="#36393F"
+                       IsVisible="{Binding SelectedGame, Converter={x:Static ObjectConverters.IsNull}}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <PathIcon Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"
+                                 Width="64" 
+                                 Height="64"
+                                 Opacity="0.3"
+                                 Margin="0,0,0,20"/>
+                        <TextBlock Text="Select a game to view backups" 
+                                  FontSize="16"
+                                  Foreground="#B9BBBE"
+                                  TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Status Bar -->
+                <Border Grid.Row="2" 
+                       Background="#2B2D31" 
+                       Height="40">
+                    <StackPanel Orientation="Horizontal" 
+                               VerticalAlignment="Center" 
+                               Margin="15,0">
+                        <ProgressBar IsVisible="{Binding IsBusy}" 
+                                    IsIndeterminate="True" 
+                                    Width="100" 
+                                    Height="4"
+                                    Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding StatusMessage}" 
+                                  FontSize="12"
+                                  Foreground="#B9BBBE"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Options Menu -->
+            <Border Grid.Row="1" Grid.Column="0" Background="#2B2D31" IsVisible="{Binding ShowOptionsMenu}">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Options" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Auto Backup on Launch" IsChecked="{Binding AppSettings.AutoBackupOnLaunch}" Foreground="#FFFFFF"/>
+                    <CheckBox Content="Backup Compression" IsChecked="{Binding AppSettings.BackupCompression}" Foreground="#FFFFFF"/>
+                    <TextBlock Text="Backup Location" Foreground="#FFFFFF" Margin="0,10,0,5"/>
+                    <TextBox Text="{Binding AppSettings.BackupLocation}"/>
+                    <TextBlock Text="Max Backup Count" Foreground="#FFFFFF" Margin="0,10,0,5"/>
+                    <NumericUpDown Value="{Binding AppSettings.MaxBackupCount}" Minimum="1" Maximum="100"/>
+                    <CheckBox Content="Check for Updates" IsChecked="{Binding AppSettings.CheckForUpdates}" Foreground="#FFFFFF"/>
+                    <CheckBox Content="Notification Sounds" IsChecked="{Binding AppSettings.NotificationSounds}" Foreground="#FFFFFF"/>
+                    <TextBlock Text="Theme" Foreground="#FFFFFF" Margin="0,10,0,5"/>
+                    <ComboBox SelectedItem="{Binding AppSettings.Theme}" ItemsSource="{Binding AvailableThemes}"/>
+
+                    <Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" Margin="0,20,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
 </Window>

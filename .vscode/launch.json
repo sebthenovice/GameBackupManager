@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug GameBackupManager.App",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/GameBackupManager.App/bin/Debug/net8.0/GameBackupManager.App.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/GameBackupManager.App",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
+        }
+    ]
+}

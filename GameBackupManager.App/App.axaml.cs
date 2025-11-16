@@ -1,16 +1,25 @@
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using GameBackupManager.App.Services;
 using GameBackupManager.App.ViewModels;
 using GameBackupManager.App.Views;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace GameBackupManager.App
 {
-    public partial class App : Application
+    public partial class App : Application, IDisposable
     {
+        #region Fields
+
+        private ILoggerFactory? _loggerFactory;
+        private bool _disposed;
+
+        #endregion Fields
+
+        #region Public Methods
+
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -18,31 +27,70 @@ namespace GameBackupManager.App
 
         public override void OnFrameworkInitializationCompleted()
         {
+            // Setup logging
+            _loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Information);
+            });
+
+            // Setup services
+            var logger = _loggerFactory.CreateLogger<App>();
+            var configService = new JsonConfigurationService(_loggerFactory.CreateLogger<JsonConfigurationService>());
+            var backupService = new BackupService(_loggerFactory.CreateLogger<BackupService>(), configService);
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
-                // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
-                DisableAvaloniaDataAnnotationValidation();
                 desktop.MainWindow = new MainWindow
                 {
-                    DataContext = new MainWindowViewModel(),
+                    DataContext = new MainWindowViewModel(
+                        configService,
+                        backupService,
+                        _loggerFactory.CreateLogger<MainWindowViewModel>()
+                    )
                 };
+
+                // Handle application exit
+                desktop.Exit += OnApplicationExit;
             }
 
             base.OnFrameworkInitializationCompleted();
         }
 
-        private void DisableAvaloniaDataAnnotationValidation()
-        {
-            // Get an array of plugins to remove
-            var dataValidationPluginsToRemove =
-                BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+        #endregion Public Methods
 
-            // remove each entry found
-            foreach (var plugin in dataValidationPluginsToRemove)
+        #region IDisposable Implementation
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
             {
-                BindingPlugins.DataValidators.Remove(plugin);
+                if (disposing)
+                {
+                    _loggerFactory?.Dispose();
+                    
+                    // Unsubscribe from events
+                    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        desktop.Exit -= OnApplicationExit;
+                    }
+                }
+
+                _disposed = true;
             }
         }
+
+        private void OnApplicationExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+        {
+            Dispose();
+        }
+
+        #endregion IDisposable Implementation
     }
 }
