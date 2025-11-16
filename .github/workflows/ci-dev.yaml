@@ -1,0 +1,53 @@
+name: CI - Dev Branch
+
+on:
+  push:
+    branches:
+      - 'dev**'
+
+jobs:
+  # Matrix strategy calling reusable workflow
+  build-and-test:
+    name: Build & Test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            runtime: win-x64
+            artifact: GameBackupManager-Windows-Dev
+          - os: ubuntu-latest
+            runtime: linux-x64
+            artifact: GameBackupManager-Linux-Dev
+          - os: macos-latest
+            runtime: osx-x64
+            artifact: GameBackupManager-macOS-Dev
+    
+    uses: ./.github/workflows/build-reusable.yaml
+    with:
+      configuration: Release
+      runtime: ${{ matrix.runtime }}
+      publish_output_name: ${{ matrix.artifact }}
+      artifact_name: ${{ matrix.artifact }}
+      should_publish: false  # Dev builds just test compilation
+
+  # Separate test job that runs after builds
+  run-tests:
+    name: Run Tests
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore & Test
+      run: |
+        dotnet restore GameBackupManager.App/GameBackupManager.App.csproj
+        dotnet test GameBackupManager.App/GameBackupManager.App.csproj --configuration Release --verbosity normal
+      continue-on-error: true  # Remove once you have tests

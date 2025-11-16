@@ -1,0 +1,9 @@
+- name: major
+  description: Major version bump (breaking changes)
+  color: "ff0000"
+- name: minor
+  description: Minor version bump (new features)
+  color: "00ff00"
+- name: patch
+  description: Patch version bump (bug fixes)
+  color: "0000ff"

@@ -1,0 +1,80 @@
+name: Reusable Build & Publish
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        required: false
+        type: string
+        default: 'Release'
+      runtime:
+        required: true
+        type: string
+      publish_output_name:
+        required: true
+        type: string
+      artifact_name:
+        required: true
+        type: string
+      should_publish:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build-publish:
+    name: Build & Publish
+    runs-on: ${{ startsWith(inputs.runtime, 'win') && 'windows-latest' || startsWith(inputs.runtime, 'osx') && 'macos-latest' || 'ubuntu-latest' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+
+    - name: Publish application
+      if: inputs.should_publish
+      run: |
+        dotnet publish GameBackupManager.App/GameBackupManager.App.csproj \
+          --configuration ${{ inputs.configuration }} \
+          --runtime ${{ inputs.runtime }} \
+          --self-contained true \
+          --output "publish/${{ inputs.publish_output_name }}" \
+          /p:PublishSingleFile=true \
+          /p:IncludeNativeLibrariesForSelfExtract=true \
+          /p:DebugSymbols=false
+
+    - name: Create archive
+      if: inputs.should_publish
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          7z a -tzip "${{ inputs.artifact_name }}.zip" "publish/${{ inputs.publish_output_name }}/*"
+        else
+          cd publish
+          zip -r "../${{ inputs.artifact_name }}.zip" "${{ inputs.publish_output_name }}"
+        fi
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: ${{ inputs.should_publish && format('{0}.zip', inputs.artifact_name) || format('**/bin/{0}/', inputs.configuration) }}
+        retention-days: ${{ inputs.should_publish && 1 || 7 }}
