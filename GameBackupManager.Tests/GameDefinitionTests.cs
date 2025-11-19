@@ -96,6 +96,19 @@ public class GameDefinitionTests
     }
 
     [Test]
+    public void DisplayName_ShouldReturnGameTitle()
+    {
+        // Arrange
+        var game = new GameDefinition { GameTitle = "The Witcher 3" };
+
+        // Act
+        var displayName = game.DisplayName;
+
+        // Assert
+        Assert.That(displayName, Is.EqualTo("The Witcher 3"));
+    }
+
+    [Test]
     public void Status_ShouldReturnNotFound_WhenIsInstalledIsFalse()
     {
         // Arrange
@@ -109,16 +122,81 @@ public class GameDefinitionTests
     }
 
     [Test]
-    public void DisplayName_ShouldReturnGameTitle()
+    public void GameTitle_ShouldBeModifiable()
     {
         // Arrange
-        var game = new GameDefinition { GameTitle = "The Witcher 3" };
+        var game = new GameDefinition { GameTitle = "Original Title" };
 
         // Act
-        var displayName = game.DisplayName;
+        game.GameTitle = "New Title";
 
         // Assert
-        Assert.That(displayName, Is.EqualTo("The Witcher 3"));
+        Assert.That(game.GameTitle, Is.EqualTo("New Title"));
+    }
+
+    [Test]
+    public void GamePath_ShouldBeModifiable()
+    {
+        // Arrange
+        var game = new GameDefinition { GamePath = @"C:\Games" };
+
+        // Act
+        game.GamePath = @"D:\Games";
+
+        // Assert
+        Assert.That(game.GamePath, Is.EqualTo(@"D:\Games"));
+    }
+
+    [Test]
+    public void SavePath_ShouldBeModifiable()
+    {
+        // Arrange
+        var game = new GameDefinition { SavePath = @"C:\Saves" };
+
+        // Act
+        game.SavePath = @"D:\Saves";
+
+        // Assert
+        Assert.That(game.SavePath, Is.EqualTo(@"D:\Saves"));
+    }
+
+    [Test]
+    public void ExecutableName_ShouldBeModifiable()
+    {
+        // Arrange
+        var game = new GameDefinition { ExecutableName = "game.exe" };
+
+        // Act
+        game.ExecutableName = "newgame.exe";
+
+        // Assert
+        Assert.That(game.ExecutableName, Is.EqualTo("newgame.exe"));
+    }
+
+    [Test]
+    public void BackupFolderName_ShouldBeModifiable()
+    {
+        // Arrange
+        var game = new GameDefinition { BackupFolderName = "old_backups" };
+
+        // Act
+        game.BackupFolderName = "new_backups";
+
+        // Assert
+        Assert.That(game.BackupFolderName, Is.EqualTo("new_backups"));
+    }
+
+    [Test]
+    public void IsInstalled_ShouldBeModifiable()
+    {
+        // Arrange
+        var game = new GameDefinition { IsInstalled = false };
+
+        // Act
+        game.IsInstalled = true;
+
+        // Assert
+        Assert.That(game.IsInstalled, Is.True);
     }
 
     #endregion Public Methods

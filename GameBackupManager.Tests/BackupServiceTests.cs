@@ -158,5 +158,94 @@ public class BackupServiceTests
         result.Message.Should().Contain("not found");
     }
 
+    [Test]
+    public async Task CreateBackupAsync_ShouldCreateCompressedBackup_WhenCompressionEnabled()
+    {
+        // Arrange
+        var savePath = Path.Combine(_testBackupDirectory, "saves");
+        var backupLocation = Path.Combine(_testBackupDirectory, "backups");
+        Directory.CreateDirectory(savePath);
+        File.WriteAllText(Path.Combine(savePath, "save.dat"), "test data");
+
+        var game = new GameDefinition
+        {
+            GameTitle = "TestGame",
+            GamePath = _testBackupDirectory,
+            SavePath = savePath,
+            IsInstalled = true
+        };
+
+        var settings = new AppSettings { BackupLocation = backupLocation, BackupCompression = true };
+        await _configService.SaveAppSettingsAsync(settings);
+
+        // Act
+        var result = await _backupService.CreateBackupAsync(game);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.BackupPath.Should().EndWith(".zip");
+        File.Exists(result.BackupPath).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task GetAvailableBackupsAsync_ShouldReturnBackups_WhenBackupsExist()
+    {
+        // Arrange
+        var savePath = Path.Combine(_testBackupDirectory, "saves");
+        var backupLocation = Path.Combine(_testBackupDirectory, "backups");
+        Directory.CreateDirectory(savePath);
+        File.WriteAllText(Path.Combine(savePath, "save.dat"), "test data");
+
+        var game = new GameDefinition
+        {
+            GameTitle = "TestGame",
+            GamePath = _testBackupDirectory,
+            SavePath = savePath,
+            IsInstalled = true,
+            BackupFolderName = "test_game_backups"
+        };
+
+        var settings = new AppSettings { BackupLocation = backupLocation, BackupCompression = false };
+        await _configService.SaveAppSettingsAsync(settings);
+
+        await _backupService.CreateBackupAsync(game);
+
+        // Act
+        var backups = await _backupService.GetAvailableBackupsAsync(game);
+
+        // Assert
+        backups.Should().NotBeEmpty();
+        backups.Should().HaveCount(1);
+        backups[0].Name.Should().Contain("TestGame");
+    }
+
+    [Test]
+    public async Task CreateBackupAsync_ShouldIncludeBackupSize()
+    {
+        // Arrange
+        var savePath = Path.Combine(_testBackupDirectory, "saves");
+        var backupLocation = Path.Combine(_testBackupDirectory, "backups");
+        Directory.CreateDirectory(savePath);
+        File.WriteAllText(Path.Combine(savePath, "save.dat"), "test data content");
+
+        var game = new GameDefinition
+        {
+            GameTitle = "TestGame",
+            GamePath = _testBackupDirectory,
+            SavePath = savePath,
+            IsInstalled = true
+        };
+
+        var settings = new AppSettings { BackupLocation = backupLocation, BackupCompression = false };
+        await _configService.SaveAppSettingsAsync(settings);
+
+        // Act
+        var result = await _backupService.CreateBackupAsync(game);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.BackupSize.Should().BeGreaterThan(0);
+    }
+
     #endregion Public Methods
 }
