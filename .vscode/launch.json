@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/GameBackupManager.App/bin/Debug/net8.0/GameBackupManager.App.dll",
+            "program": "${workspaceFolder}/GameBackupManager.App/bin/Debug/net10.0/GameBackupManager.App.dll",
             "args": [],
             "cwd": "${workspaceFolder}/GameBackupManager.App",
             "stopAtEntry": false,

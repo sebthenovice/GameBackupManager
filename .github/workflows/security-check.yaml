@@ -1,0 +1,47 @@
+name: 'Security: Dependency Check'
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev**
+
+jobs:
+  dependency-check:
+    name: 'Security / Dependency Scan'
+    runs-on: ubuntu-latest
+    steps:
+      - name: '[Core] Checkout repository'
+        uses: actions/checkout@v4
+      
+      - name: '[Core] Setup .NET'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: '[Core] Cache NuGet packages'
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+      
+      - name: '[Core] Restore dependencies'
+        run: dotnet restore
+      
+      - name: '[Core] Build'
+        run: dotnet build --configuration Release --no-restore
+      
+      - name: 'Dependency: Check for vulnerabilities'
+        run: |
+          echo "Checking for security vulnerabilities in dependencies..."
+          # This command checks for known vulnerabilities in NuGet packages
+          dotnet list package --vulnerable 2>&1 | tee vuln-report.txt
+          
+          # Check if any vulnerabilities were found
+          if grep -q "has \d\+ vulnerable" vuln-report.txt; then
+            echo "::error::Vulnerable dependencies detected. Please update your packages."
+            exit 1
+          fi
+          if grep -q "has \d\+ vulnerable" vuln-report.txt; then

@@ -1,5 +1,10 @@
 # Game Backup Manager
 
+[![CI - Dev Branch](https://github.com/sebthenovice/GameBackupManager/workflows/CI%20-%20Dev%20Branch/badge.svg)](https://github.com/sebthenovice/GameBackupManager/actions/workflows/ci-dev.yaml)
+[![Release](https://github.com/sebthenovice/GameBackupManager/workflows/Release%20-%20Create%20on%20PR%20Merge/badge.svg)](https://github.com/sebthenovice/GameBackupManager/actions/workflows/release.yaml)
+[![codecov](https://codecov.io/gh/sebthenovice/GameBackupManager/branch/dev-ui/graph/badge.svg)](https://codecov.io/gh/sebthenovice/GameBackupManager)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
+
 A modern, cross-platform game save backup manager built with C# .NET 10 and Avalonia UI. Automatically detect installed games, manage save backups, and restore previous save states with ease.
 
 ## Features
@@ -82,19 +87,50 @@ Tracks which games are currently being managed:
 
 ## Usage
 
-### Adding New Games
+### User Guide — Quickstart (for end users)
 
-1. Edit the `games.json` file in your application data directory
-2. Add new game definitions following the format above
-3. Restart the application to see the new games
+Follow these quick steps to install, run, back up saves, and restore them.
 
-### Creating Backups
+Install and run
+
+- Make sure you have the .NET 10.0 SDK installed.
+- Download or clone this repository and run the published app or build it locally.
+- To run from source: `dotnet run --project GameBackupManager/GameBackupManager.App.csproj`.
+
+Configure the app (first run)
+
+- On first run the app will create its configuration files in your application data folder (see the three JSON files described above).
+- Review `games.json` to add any games the app didn't auto-detect. Provide the executable name and save path where required.
+
+Create a backup
+
+- Open the app and choose the game you want to back up from the main list.
+- Click the "Backup" button (or use the context menu) to create a timestamped backup.
+- Backups are stored under your configured backup location (e.g., `C:\Users\\<you>\\Documents\\GameBackups`).
+
+Restore a backup
+
+- Select a game, pick a backup from the list, and click "Restore".
+- The selected save state will be copied back to the game's save folder; the app creates a pre-restore backup automatically.
+
+Manage backups and retention
+
+- Change retention and compression settings in the app settings (max backups, compression on/off).
+- Use the automatic cleanup setting to delete older backups beyond the retention limit.
+
+Troubleshooting (quick)
+
+- If a game isn't detected, verify the `gamePath` and `savePath` in `games.json` and restart the app.
+- If a backup fails, check that the save path exists and is writable.
+- For permission problems on Windows, run the app with elevated privileges only when necessary.
+
+### Creating Backups (details)
 
 1. Select a game from the main list
 2. Click the "Backup" button
 3. The backup will be created in your configured backup location
 
-### Restoring Backups
+### Restoring Backups (details)
 
 1. Select a game from the main list
 2. Choose a backup from the right panel
@@ -133,6 +169,7 @@ GameBackups/
 ## Technical Details
 
 ### Architecture
+
 - **UI Framework**: Avalonia UI 11.0.10
 - **Target Framework**: .NET 10.0
 - **Design Pattern**: MVVM (Model-View-ViewModel)
@@ -147,6 +184,7 @@ GameBackups/
 - **Views**: MainWindow
 
 ### Styling
+
 - Custom dark theme inspired by Discord
 - Responsive design with smooth transitions
 - Modern typography using Inter font
@@ -175,11 +213,32 @@ The application is designed to be extensible:
 
 ### Testing
 
-Run the application and test with various games:
+The project includes comprehensive unit tests using NUnit, FluentAssertions, and NSubstitute.
+
+#### Running Tests Locally
 
 ```bash
-dotnet run --project GameBackupManager/GameBackupManager.csproj
+dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj
 ```
+
+#### Running Tests with Coverage Report
+
+```bash
+dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj \
+  --collect:"XPlat Code Coverage" \
+  --results-directory ./coverage
+```
+
+#### Coverage Reports
+
+Code coverage is automatically generated on every push to the `dev-ui` branch and uploaded to [Codecov](https://codecov.io/gh/sebthenovice/GameBackupManager). You can view the coverage reports on the [Codecov dashboard](https://codecov.io/gh/sebthenovice/GameBackupManager).
+
+#### Test Structure
+
+- **GameDefinitionTests**: Tests for game model validation and properties
+- **BackupServiceTests**: Tests for backup creation, restoration, and management
+- **JsonConfigurationServiceTests**: Tests for configuration file I/O and serialization
+- **GameViewModelTests**: Tests for view model logic and data binding
 
 ## Troubleshooting
 
@@ -201,6 +260,8 @@ The application logs to the console by default. For detailed logging, check the 
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
+
+For developer-specific contribution guidelines, branch naming conventions, CI expectations (which branch names trigger CI and how releases are created), and local test/build commands, see: `.github/DEVELOPER_GUIDE.md`.
 
 ## License
 

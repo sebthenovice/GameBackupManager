@@ -51,11 +51,8 @@
                           Foreground="#FFFFFF"/>
             </StackPanel>
 
-            <StackPanel Grid.Column="2" 
-                       Orientation="Horizontal" 
-                       VerticalAlignment="Center" 
-                       Margin="0,0,20,0" 
-                       Spacing="10">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0" Spacing="10">
+                <ComboBox Width="120" SelectedItem="{Binding AppSettings.Theme, Mode=TwoWay}" ItemsSource="{Binding AvailableThemes}"/>
                 <Button Classes="IconButton"
                         ToolTip.Tip="Refresh Games"
                         Command="{Binding RefreshGamesCommand}">
@@ -261,7 +258,6 @@
                     <CheckBox Content="Check for Updates" IsChecked="{Binding AppSettings.CheckForUpdates}" Foreground="#FFFFFF"/>
                     <CheckBox Content="Notification Sounds" IsChecked="{Binding AppSettings.NotificationSounds}" Foreground="#FFFFFF"/>
                     <TextBlock Text="Theme" Foreground="#FFFFFF" Margin="0,10,0,5"/>
-                    <ComboBox SelectedItem="{Binding AppSettings.Theme}" ItemsSource="{Binding AvailableThemes}"/>
 
                     <Button Content="Save Settings" Command="{Binding SaveSettingsCommand}" Margin="0,20,0,0"/>
                 </StackPanel>

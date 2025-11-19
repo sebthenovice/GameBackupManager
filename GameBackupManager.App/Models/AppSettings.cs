@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace GameBackupManager.App.Models
 {
-    public class AppSettings
+    public partial class AppSettings : ObservableObject
     {
         #region Properties
 
@@ -29,8 +30,9 @@ namespace GameBackupManager.App.Models
         [JsonPropertyName("notificationSounds")]
         public bool NotificationSounds { get; set; } = true;
 
+        [ObservableProperty]
         [JsonPropertyName("theme")]
-        public string Theme { get; set; } = "Dark";
+        private string theme = "Dark";
 
         #endregion Properties
 
