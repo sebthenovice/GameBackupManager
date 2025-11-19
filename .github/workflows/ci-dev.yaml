@@ -9,7 +9,7 @@ jobs:
   # Build on all platforms in parallel
   build-windows:
     name: Build Windows
-    uses: ./.github/workflows/build-reusable.yaml
+    uses: ./.github/workflows/core-build.yaml
     with:
       configuration: Release
       runtime: win-x64
@@ -19,7 +19,7 @@ jobs:
 
   build-linux:
     name: Build Linux
-    uses: ./.github/workflows/build-reusable.yaml
+    uses: ./.github/workflows/core-build.yaml
     with:
       configuration: Release
       runtime: linux-x64
@@ -29,7 +29,7 @@ jobs:
 
   build-macos:
     name: Build macOS
-    uses: ./.github/workflows/build-reusable.yaml
+    uses: ./.github/workflows/core-build.yaml
     with:
       configuration: Release
       runtime: osx-x64
@@ -37,46 +37,37 @@ jobs:
       artifact_name: GameBackupManager-macOS-Dev
       should_publish: false
 
-  # Tests run independently and in parallel with builds
-  run-tests:
-    name: Run Tests & Generate Coverage
+  test-and-coverage:
+    name: Test & Code Coverage
+    uses: ./.github/workflows/core-test.yaml
+    with:
+      configuration: Release
+
+  # Summary job that waits for all critical checks
+  ci-status-check:
+    name: CI Status Check
     runs-on: ubuntu-latest
+    needs: [build-windows, build-linux, build-macos, test-and-coverage]
+    if: always()
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
-
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Run Tests with Coverage
-      run: |
-        dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj \
-          --configuration Release \
-          --verbosity normal \
-          --collect:"XPlat Code Coverage" \
-          --results-directory ./coverage \
-          --logger "trx;LogFileName=test-results.trx"
-
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/**/coverage.cobertura.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-        verbose: true
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: coverage/**/*.trx
-        retention-days: 30
+      - name: 'Aggregate: Check job status'
+        run: |
+          if [[ "${{ needs.build-windows.result }}" != "success" ]]; then
+            echo "::error::Windows build failed"
+            exit 1
+          fi
+          if [[ "${{ needs.build-linux.result }}" != "success" ]]; then
+            echo "::error::Linux build failed"
+            exit 1
+          fi
+          if [[ "${{ needs.build-macos.result }}" != "success" ]]; then
+            echo "::error::macOS build failed"
+            exit 1
+          fi
+          if [[ "${{ needs.test-and-coverage.result }}" != "success" ]]; then
+            echo "::error::Tests or coverage failed"
+            exit 1
+          fi
+          echo "✓ All CI checks passed (via core workflows)"
+        shell: bash

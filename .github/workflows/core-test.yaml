@@ -1,0 +1,63 @@
+name: 'Core: Test & Coverage'
+description: 'Reusable workflow for running tests and collecting code coverage'
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        required: false
+        type: string
+        default: 'Release'
+        description: 'Build configuration (Debug/Release)'
+
+jobs:
+  core-test:
+    name: '[Core] Test & Coverage'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: '[Core] Checkout code'
+      uses: actions/checkout@v4
+
+    - name: '[Core] Setup .NET'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: '[Core] Cache NuGet packages'
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: '[Core] Restore dependencies'
+      run: dotnet restore
+
+    - name: '[Core] Run Tests with Coverage'
+      run: |
+        dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj \
+          --configuration ${{ inputs.configuration }} \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage \
+          --logger "trx;LogFileName=test-results.trx"
+
+    - name: '[Core] Upload coverage reports to Codecov'
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/**/coverage.cobertura.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
+
+    - name: '[Core] Upload test results'
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: coverage/**/*.trx
+        retention-days: 30

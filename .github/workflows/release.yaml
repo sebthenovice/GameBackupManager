@@ -1,4 +1,4 @@
-name: Release - Create on PR Merge
+name: 'CD: Release'
 
 on:
   pull_request:
@@ -82,7 +82,7 @@ jobs:
   build-windows:
     name: Build Windows Release
     needs: bump-version
-    uses: ./.github/workflows/build-reusable.yaml
+    uses: ./.github/workflows/core-build.yaml
     with:
       configuration: Release
       runtime: win-x64
@@ -93,7 +93,7 @@ jobs:
   build-linux:
     name: Build Linux Release
     needs: bump-version
-    uses: ./.github/workflows/build-reusable.yaml
+    uses: ./.github/workflows/core-build.yaml
     with:
       configuration: Release
       runtime: linux-x64
@@ -104,7 +104,7 @@ jobs:
   build-macos:
     name: Build macOS Release
     needs: bump-version
-    uses: ./.github/workflows/build-reusable.yaml
+    uses: ./.github/workflows/core-build.yaml
     with:
       configuration: Release
       runtime: osx-x64
@@ -126,7 +126,7 @@ jobs:
         with:
           path: artifacts
 
-      - name: Generate release notes
+      - name: 'Aggregate: Generate release notes'
         id: release-notes
         run: |
           PR_TITLE="${{ needs.check-merge.outputs.pr_title }}"

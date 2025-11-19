@@ -1,0 +1,91 @@
+name: 'Core: Build & Publish'
+description: 'Reusable workflow for building and publishing .NET applications'
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        required: false
+        type: string
+        default: 'Release'
+        description: 'Build configuration (Debug/Release)'
+      runtime:
+        required: true
+        type: string
+        description: 'Runtime identifier (win-x64, linux-x64, osx-x64)'
+      publish_output_name:
+        required: true
+        type: string
+        description: 'Output directory name for published application'
+      artifact_name:
+        required: true
+        type: string
+        description: 'Artifact name for upload'
+      should_publish:
+        required: false
+        type: boolean
+        default: true
+        description: 'Whether to publish as self-contained application'
+      build_type:
+        required: false
+        type: string
+        default: 'build'
+        description: 'Build type: build, analysis, or publish'
+
+jobs:
+  core-build:
+    name: '[Core] Build & Publish'
+    runs-on: ${{ startsWith(inputs.runtime, 'win') && 'windows-latest' || startsWith(inputs.runtime, 'osx') && 'macos-latest' || 'ubuntu-latest' }}
+    
+    steps:
+    - name: '[Core] Checkout code'
+      uses: actions/checkout@v4
+
+    - name: '[Core] Setup .NET'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: '[Core] Cache NuGet packages'
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.sln') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: '[Core] Restore dependencies'
+      run: dotnet restore
+
+    - name: '[Core] Build'
+      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+
+    - name: '[Core] Publish application'
+      if: inputs.should_publish
+      run: |
+        dotnet publish GameBackupManager.App/GameBackupManager.App.csproj \
+          --configuration ${{ inputs.configuration }} \
+          --runtime ${{ inputs.runtime }} \
+          --self-contained true \
+          --output "publish/${{ inputs.publish_output_name }}" \
+          /p:PublishSingleFile=true \
+          /p:IncludeNativeLibrariesForSelfExtract=true \
+          /p:DebugSymbols=false
+
+    - name: '[Core] Create archive'
+      if: inputs.should_publish
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          7z a -tzip "${{ inputs.artifact_name }}.zip" "publish/${{ inputs.publish_output_name }}/*"
+        else
+          cd publish
+          zip -r "../${{ inputs.artifact_name }}.zip" "${{ inputs.publish_output_name }}"
+        fi
+      shell: bash
+
+    - name: '[Core] Upload artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: ${{ inputs.should_publish && format('{0}.zip', inputs.artifact_name) || format('**/bin/{0}/', inputs.configuration) }}
+        retention-days: ${{ inputs.should_publish && 1 || 7 }}
