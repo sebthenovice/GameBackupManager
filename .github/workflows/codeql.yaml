@@ -13,10 +13,12 @@ on:
     # Run CodeQL analysis on a schedule (daily at 2 AM UTC)
     - cron: '0 2 * * *'
 
-
 jobs:
   codeql-analyze:
     name: Security / CodeQL
+    permissions:
+      actions: read
+      security-events: write
     uses: ./.github/workflows/core-codeql.yaml
     with:
       configuration: Release
