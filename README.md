@@ -1,5 +1,10 @@
 # Game Backup Manager
 
+[![CI - Dev Branch](https://github.com/sebthenovice/GameBackupManager/workflows/CI%20-%20Dev%20Branch/badge.svg)](https://github.com/sebthenovice/GameBackupManager/actions/workflows/ci-dev.yaml)
+[![Release](https://github.com/sebthenovice/GameBackupManager/workflows/Release%20-%20Create%20on%20PR%20Merge/badge.svg)](https://github.com/sebthenovice/GameBackupManager/actions/workflows/release.yaml)
+[![codecov](https://codecov.io/gh/sebthenovice/GameBackupManager/branch/dev-ui/graph/badge.svg)](https://codecov.io/gh/sebthenovice/GameBackupManager)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
+
 A modern, cross-platform game save backup manager built with C# .NET 10 and Avalonia UI. Automatically detect installed games, manage save backups, and restore previous save states with ease.
 
 ## Features
@@ -175,11 +180,32 @@ The application is designed to be extensible:
 
 ### Testing
 
-Run the application and test with various games:
+The project includes comprehensive unit tests using NUnit, FluentAssertions, and NSubstitute.
+
+#### Running Tests Locally
 
 ```bash
-dotnet run --project GameBackupManager/GameBackupManager.csproj
+dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj
 ```
+
+#### Running Tests with Coverage Report
+
+```bash
+dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj \
+  --collect:"XPlat Code Coverage" \
+  --results-directory ./coverage
+```
+
+#### Coverage Reports
+
+Code coverage is automatically generated on every push to the `dev-ui` branch and uploaded to [Codecov](https://codecov.io/gh/sebthenovice/GameBackupManager). You can view the coverage reports on the [Codecov dashboard](https://codecov.io/gh/sebthenovice/GameBackupManager).
+
+#### Test Structure
+
+- **GameDefinitionTests**: Tests for game model validation and properties
+- **BackupServiceTests**: Tests for backup creation, restoration, and management
+- **JsonConfigurationServiceTests**: Tests for configuration file I/O and serialization
+- **GameViewModelTests**: Tests for view model logic and data binding
 
 ## Troubleshooting
 

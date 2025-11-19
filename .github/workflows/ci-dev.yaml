@@ -6,35 +6,40 @@ on:
       - 'dev**'
 
 jobs:
-  # Matrix strategy calling reusable workflow
-  build-and-test:
-    name: Build & Test
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: windows-latest
-            runtime: win-x64
-            artifact: GameBackupManager-Windows-Dev
-          - os: ubuntu-latest
-            runtime: linux-x64
-            artifact: GameBackupManager-Linux-Dev
-          - os: macos-latest
-            runtime: osx-x64
-            artifact: GameBackupManager-macOS-Dev
-    
+  # Build on all platforms in parallel
+  build-windows:
+    name: Build Windows
     uses: ./.github/workflows/build-reusable.yaml
     with:
       configuration: Release
-      runtime: ${{ matrix.runtime }}
-      publish_output_name: ${{ matrix.artifact }}
-      artifact_name: ${{ matrix.artifact }}
-      should_publish: false  # Dev builds just test compilation
+      runtime: win-x64
+      publish_output_name: GameBackupManager-Windows-Dev
+      artifact_name: GameBackupManager-Windows-Dev
+      should_publish: false
 
-  # Separate test job that runs after builds
+  build-linux:
+    name: Build Linux
+    uses: ./.github/workflows/build-reusable.yaml
+    with:
+      configuration: Release
+      runtime: linux-x64
+      publish_output_name: GameBackupManager-Linux-Dev
+      artifact_name: GameBackupManager-Linux-Dev
+      should_publish: false
+
+  build-macos:
+    name: Build macOS
+    uses: ./.github/workflows/build-reusable.yaml
+    with:
+      configuration: Release
+      runtime: osx-x64
+      publish_output_name: GameBackupManager-macOS-Dev
+      artifact_name: GameBackupManager-macOS-Dev
+      should_publish: false
+
+  # Tests run independently and in parallel with builds
   run-tests:
-    name: Run Tests
-    needs: build-and-test
+    name: Run Tests & Generate Coverage
     runs-on: ubuntu-latest
     
     steps:
@@ -46,8 +51,32 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Restore & Test
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Run Tests with Coverage
       run: |
-        dotnet restore GameBackupManager.App/GameBackupManager.App.csproj
-        dotnet test GameBackupManager.App/GameBackupManager.App.csproj --configuration Release --verbosity normal
-      continue-on-error: true  # Remove once you have tests
+        dotnet test GameBackupManager.Tests/GameBackupManager.Tests.csproj \
+          --configuration Release \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./coverage \
+          --logger "trx;LogFileName=test-results.trx"
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/**/coverage.cobertura.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: coverage/**/*.trx
+        retention-days: 30

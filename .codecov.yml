@@ -1,0 +1,47 @@
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+ignore:
+  - "**/*.Tests"
+  - "**/*Tests.cs"
+  - "**/obj/**"
+  - "**/bin/**"
+
+codecov:
+  require_ci_to_pass: false
+  strict: false
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  hide_project_graph: false
+
+flags:
+  unittests:
+    paths:
+      - GameBackupManager.Tests/
+    carryforward: true
+    statuses:
+      - type: "patch"
+        target: 80%
+      - type: "project"
+        target: 75%
+
+status:
+  project:
+    default:
+      target: 75%
+      threshold: 5%
+  patch:
+    default:
+      target: 80%
+      threshold: 5%
+  changes:
+    default:
+      target: 80%
+      threshold: 5%
