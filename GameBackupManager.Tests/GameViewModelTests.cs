@@ -1,11 +1,7 @@
-﻿using Avalonia.Controls.Shapes;
-using FluentAssertions;
+﻿using FluentAssertions;
 using GameBackupManager.App.Models;
-using GameBackupManager.App.Services;
 using GameBackupManager.App.ViewModels;
-using NSubstitute;
 using NUnit.Framework;
-using System.Threading.Tasks;
 
 namespace GameBackupManager.Tests.ViewModels;
 
@@ -14,7 +10,6 @@ public class GameViewModelTests
 {
     #region Fields
 
-    private IBackupService _mockBackupService;
     private GameDefinition _testGame;
     private GameViewModel _viewModel;
 
@@ -22,45 +17,16 @@ public class GameViewModelTests
 
     #region Public Methods
 
-    [Test]
-    public async Task BackupCommand_ShouldCallBackupService_WhenExecuted()
+    [SetUp]
+    public void SetUp()
     {
-        // Arrange
-        _mockBackupService.CreateBackup(Arg.Any<GameDefinition>(), Arg.Any<AppSettings>())
-            .Returns(new BackupResult { Success = true });
-
-        // Act
-        await _viewModel.BackupCommand.ExecuteAsync(null);
-
-        // Assert
-        await _mockBackupService.Received(1).CreateBackup(_testGame, Arg.Any<AppSettings>());
-    }
-
-    [Test]
-    public async Task BackupCommand_ShouldSetIsProcessing_DuringExecution()
-    {
-        // Arrange
-        _mockBackupService.CreateBackup(default, default)
-            .ReturnsForAnyArgs(new BackupResult { Success = true });
-
-        bool processingStarted = false;
-        bool processingEnded = false;
-
-        _viewModel.PropertyChanged += (s, e) =>
+        _testGame = new GameDefinition("Test Game", @"C:\Games\TestGame", @"C:\Saves\TestGame")
         {
-            if (e.PropertyName == nameof(_viewModel.IsProcessing))
-            {
-                if (_viewModel.IsProcessing) processingStarted = true;
-                else processingEnded = true;
-            }
+            ExecutableName = "game.exe",
+            BackupFolderName = "test_game_backups",
+            IsInstalled = true
         };
-
-        // Act
-        await _viewModel.BackupCommand.ExecuteAsync(null);
-
-        // Assert
-        processingStarted.Should().BeTrue();
-        processingEnded.Should().BeTrue();
+        _viewModel = new GameViewModel(_testGame, isActive: false);
     }
 
     [Test]
@@ -68,16 +34,77 @@ public class GameViewModelTests
     {
         // Assert
         _viewModel.GameTitle.Should().Be("Test Game");
-        _viewModel.IsProcessing.Should().BeFalse();
-        _viewModel.BackupCommand.Should().NotBeNull();
+        _viewModel.GamePath.Should().Be(@"C:\Games\TestGame");
+        _viewModel.SavePath.Should().Be(@"C:\Saves\TestGame");
+        _viewModel.IsInstalled.Should().BeTrue();
+        _viewModel.IsActive.Should().BeFalse();
     }
 
-    [SetUp]
-    public void SetUp()
+    [Test]
+    public void GameDefinition_ShouldReturnCorrectGameDefinition()
     {
-        _mockBackupService = Substitute.For<IBackupService>();
-        _testGame = new GameDefinition { GameTitle = "Test Game" };
-        _viewModel = new GameViewModel(_testGame, _mockBackupService);
+        // Act
+        var gameDef = _viewModel.GameDefinition;
+
+        // Assert
+        gameDef.Should().Be(_testGame);
+        gameDef.GameTitle.Should().Be("Test Game");
+    }
+
+    [Test]
+    public void Status_ShouldReflectInstallationStatus()
+    {
+        // Assert
+        _viewModel.Status.Should().Be("Installed");
+    }
+
+    [Test]
+    public void Status_ShouldReturnNotFound_WhenGameNotInstalled()
+    {
+        // Arrange
+        var uninstalledGame = new GameDefinition("Not Installed", @"C:\NonExistent", @"C:\Saves")
+        {
+            IsInstalled = false
+        };
+        var viewModel = new GameViewModel(uninstalledGame, isActive: false);
+
+        // Act & Assert
+        viewModel.Status.Should().Be("NotFound");
+    }
+
+    [Test]
+    public void IsActive_ShouldBeTrue_WhenSetActive()
+    {
+        // Arrange
+        var viewModel = new GameViewModel(_testGame, isActive: true);
+
+        // Act & Assert
+        viewModel.IsActive.Should().BeTrue();
+    }
+
+    [Test]
+    public void IsActive_ShouldBeFalse_WhenSetInactive()
+    {
+        // Arrange
+        var viewModel = new GameViewModel(_testGame, isActive: false);
+
+        // Act & Assert
+        viewModel.IsActive.Should().BeFalse();
+    }
+
+    [Test]
+    public void Backups_ShouldBeEmptyCollection_ByDefault()
+    {
+        // Assert
+        _viewModel.Backups.Should().NotBeNull();
+        _viewModel.Backups.Should().BeEmpty();
+    }
+
+    [Test]
+    public void DisplayName_ShouldReturnGameTitle()
+    {
+        // Act & Assert
+        _viewModel.GameDefinition.DisplayName.Should().Be("Test Game");
     }
 
     #endregion Public Methods

@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using GameBackupManager.App.Models;
+using System.IO;
 
 namespace GameBackupManager.Tests.Models;
 
@@ -9,54 +10,115 @@ public class GameDefinitionTests
     #region Public Methods
 
     [Test]
-    public void Constructor_ShouldInitializeProperties_WhenValidDataProvided()
+    public void Constructor_ParameterizedConstructor_ShouldInitializeProperties()
     {
         // Arrange & Act
-        var game = new GameDefinition
-        {
-            GameTitle = "The Witcher 3",
-            GamePath = @"C:\Games\Witcher3",
-            SavePath = @"C:\Saves\Witcher3",
-            ExecutableName = "witcher3.exe",
-            BackupFolderName = "witcher3_saves",
-            IsInstalled = true
-        };
+        var game = new GameDefinition("The Witcher 3", @"C:\Games\Witcher3", @"C:\Saves\Witcher3");
 
         // Assert
         Assert.That(game.GameTitle, Is.EqualTo("The Witcher 3"));
-        Assert.That(game.IsInstalled, Is.True);
-        Assert.That(game.BackupFolderName, Is.EqualTo("witcher3_saves"));
+        Assert.That(game.GamePath, Is.EqualTo(@"C:\Games\Witcher3"));
+        Assert.That(game.SavePath, Is.EqualTo(@"C:\Saves\Witcher3"));
     }
 
     [Test]
-    public void IsGameInstalled_ShouldReturnFalse_WhenExecutableNotFound()
+    public void Constructor_DefaultConstructor_ShouldInitializeWithDefaults()
+    {
+        // Act
+        var game = new GameDefinition();
+
+        // Assert
+        Assert.That(game.GameTitle, Is.EqualTo(string.Empty));
+        Assert.That(game.GamePath, Is.EqualTo(string.Empty));
+        Assert.That(game.SavePath, Is.EqualTo(string.Empty));
+        Assert.That(game.IsInstalled, Is.False);
+    }
+
+    [Test]
+    public void CheckInstallationStatus_ShouldSetIsInstalledTrue_WhenGamePathExists()
+    {
+        // Arrange
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempDir);
+        
+        try
+        {
+            var game = new GameDefinition
+            {
+                GameTitle = "Test Game",
+                GamePath = tempDir,
+                SavePath = @"C:\Saves"
+            };
+            game.IsInstalled = false;
+
+            // Act
+            game.CheckInstallationStatus();
+
+            // Assert
+            Assert.That(game.IsInstalled, Is.True);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void CheckInstallationStatus_ShouldSetIsInstalledFalse_WhenGamePathDoesNotExist()
     {
         // Arrange
         var game = new GameDefinition
         {
-            ExecutableName = "nonexistent.exe"
+            GameTitle = "Test Game",
+            GamePath = @"C:\NonExistentPath\Games",
+            SavePath = @"C:\Saves"
         };
+        game.IsInstalled = true;
 
         // Act
-        var result = game.IsInstalled; // Assuming this method exists
+        game.CheckInstallationStatus();
 
         // Assert
-        Assert.That(result, Is.False);
+        Assert.That(game.IsInstalled, Is.False);
     }
 
     [Test]
-    [TestCase("witcher3.exe", true)]
-    [TestCase("another.exe", false)]
-    public void MatchesExecutable_ShouldReturnExpectedResult(string executable, bool expected)
+    public void Status_ShouldReturnInstalled_WhenIsInstalledIsTrue()
     {
         // Arrange
-        var game = new GameDefinition { ExecutableName = "witcher3.exe" };
+        var game = new GameDefinition { IsInstalled = true };
 
         // Act
-        var result = game.ExecutableName;
+        var status = game.Status;
 
         // Assert
-        Assert.That(result, Is.EqualTo(expected));
+        Assert.That(status, Is.EqualTo("Installed"));
+    }
+
+    [Test]
+    public void Status_ShouldReturnNotFound_WhenIsInstalledIsFalse()
+    {
+        // Arrange
+        var game = new GameDefinition { IsInstalled = false };
+
+        // Act
+        var status = game.Status;
+
+        // Assert
+        Assert.That(status, Is.EqualTo("NotFound"));
+    }
+
+    [Test]
+    public void DisplayName_ShouldReturnGameTitle()
+    {
+        // Arrange
+        var game = new GameDefinition { GameTitle = "The Witcher 3" };
+
+        // Act
+        var displayName = game.DisplayName;
+
+        // Assert
+        Assert.That(displayName, Is.EqualTo("The Witcher 3"));
     }
 
     #endregion Public Methods

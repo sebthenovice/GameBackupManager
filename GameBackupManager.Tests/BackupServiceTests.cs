@@ -4,7 +4,9 @@ using GameBackupManager.App.Services;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NUnit.Framework;
-using System.IO.Abstractions.TestingHelpers;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace GameBackupManager.Tests.Services;
 
@@ -14,93 +16,146 @@ public class BackupServiceTests
     #region Fields
 
     private BackupService _backupService;
-    private MockFileSystem _mockFileSystem;
-    private ILogger<BackupService> _mockLogger;
+    private ILogger<BackupService> _mockBackupLogger;
+    private ILogger<JsonConfigurationService> _mockConfigLogger;
+    private JsonConfigurationService _configService;
+    private string _testBackupDirectory;
 
     #endregion Fields
 
     #region Public Methods
 
+    [SetUp]
+    public void SetUp()
+    {
+        _mockBackupLogger = Substitute.For<ILogger<BackupService>>();
+        _mockConfigLogger = Substitute.For<ILogger<JsonConfigurationService>>();
+        _testBackupDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(_testBackupDirectory);
+        
+        _configService = new JsonConfigurationService(_mockConfigLogger);
+        _backupService = new BackupService(_mockBackupLogger, _configService);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        if (Directory.Exists(_testBackupDirectory))
+        {
+            Directory.Delete(_testBackupDirectory, true);
+        }
+    }
+
     [Test]
-    public void CreateBackup_ShouldCopySaveFiles_ToBackupLocation()
+    public async Task CreateBackupAsync_ShouldReturnFailure_WhenGameNotInstalled()
     {
         // Arrange
         var game = new GameDefinition
         {
             GameTitle = "TestGame",
-            SavePath = @"C:\GameSaves\TestGame",
-            BackupFolderName = "testgame_backups"
+            GamePath = @"C:\NonExistent\Path",
+            SavePath = @"C:\SavePath",
+            IsInstalled = false
         };
 
-        var settings = new AppSettings { BackupLocation = @"D:\Backups" };
-
-        // Create mock save files
-        _mockFileSystem.AddDirectory(game.SavePath);
-        _mockFileSystem.AddFile($@"{game.SavePath}\save1.dat", new MockFileData("SAVE DATA 1"));
-        _mockFileSystem.AddFile($@"{game.SavePath}\save2.dat", new MockFileData("SAVE DATA 2"));
-
         // Act
-        var result = _backupService.CreateBackup(game, settings);
+        var result = await _backupService.CreateBackupAsync(game);
 
         // Assert
-        Assert.That(result.Success, Is.True);
-
-        var backupPath = $@"{settings.BackupLocation}\{game.BackupFolderName}";
-        Assert.That(_mockFileSystem.Directory.Exists(backupPath), Is.True);
-
-        var backupFiles = _mockFileSystem.Directory.GetFiles(backupPath);
-        backupFiles.Should().HaveCount(1); // One backup zip/file
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("not installed");
     }
 
     [Test]
-    public void DeleteOldBackups_ShouldRespectMaxBackupCount()
+    public async Task CreateBackupAsync_ShouldReturnFailure_WhenSavePathDoesNotExist()
     {
         // Arrange
-        var game = new GameDefinition { BackupFolderName = "testgame" };
-        var settings = new AppSettings { BackupLocation = @"D:\Backups", MaxBackupCount = 3 };
-
-        var backupDir = $@"{settings.BackupLocation}\{game.BackupFolderName}";
-        _mockFileSystem.AddDirectory(backupDir);
-
-        // Create 5 backup files
-        for (int i = 1; i <= 5; i++)
+        var game = new GameDefinition
         {
-            _mockFileSystem.AddFile(
-                $@"{backupDir}\backup_{i}.zip",
-                new MockFileData($"BACKUP {i}")
-            );
-        }
+            GameTitle = "TestGame",
+            GamePath = @"C:\Games\TestGame",
+            SavePath = @"C:\NonExistent\Saves",
+            IsInstalled = true
+        };
 
         // Act
-        _backupService.DeleteOldBackups(game, settings);
+        var result = await _backupService.CreateBackupAsync(game);
 
         // Assert
-        var remainingFiles = _mockFileSystem.Directory.GetFiles(backupDir);
-        remainingFiles.Should().HaveCount(3);
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("Save path does not exist");
     }
 
     [Test]
-    public void GetBackups_ShouldReturnEmptyList_WhenNoBackupsExist()
+    public async Task CreateBackupAsync_ShouldCreateBackup_WhenValidGameAndSavePath()
     {
         // Arrange
-        var game = new GameDefinition { BackupFolderName = "nonexistent" };
-        var settings = new AppSettings { BackupLocation = @"D:\Backups" };
+        var savePath = Path.Combine(_testBackupDirectory, "saves");
+        var backupLocation = Path.Combine(_testBackupDirectory, "backups");
+        Directory.CreateDirectory(savePath);
 
-        _mockFileSystem.AddDirectory(settings.BackupLocation);
+        // Create some test save files
+        File.WriteAllText(Path.Combine(savePath, "save1.dat"), "test save data");
+        File.WriteAllText(Path.Combine(savePath, "save2.dat"), "more save data");
+
+        var game = new GameDefinition
+        {
+            GameTitle = "TestGame",
+            GamePath = _testBackupDirectory,
+            SavePath = savePath,
+            IsInstalled = true
+        };
+
+        // Update settings to use test backup location
+        var settings = new AppSettings { BackupLocation = backupLocation, BackupCompression = false };
+        await _configService.SaveAppSettingsAsync(settings);
 
         // Act
-        var backups = _backupService.GetBackups(game, settings);
+        var result = await _backupService.CreateBackupAsync(game);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.Message.Should().Contain("successfully");
+        result.BackupPath.Should().NotBeNullOrEmpty();
+    }
+
+    [Test]
+    public async Task GetAvailableBackupsAsync_ShouldReturnEmptyList_WhenNoBackupsExist()
+    {
+        // Arrange
+        var game = new GameDefinition
+        {
+            GameTitle = "TestGame",
+            GamePath = _testBackupDirectory,
+            SavePath = _testBackupDirectory,
+            IsInstalled = true
+        };
+
+        // Act
+        var backups = await _backupService.GetAvailableBackupsAsync(game);
 
         // Assert
         backups.Should().BeEmpty();
     }
 
-    [SetUp]
-    public void SetUp()
+    [Test]
+    public async Task RestoreBackupAsync_ShouldReturnFailure_WhenBackupPathNotFound()
     {
-        _mockFileSystem = new MockFileSystem();
-        _mockLogger = Substitute.For<ILogger<BackupService>>();
-        _backupService = new BackupService(_mockFileSystem, _mockLogger);
+        // Arrange
+        var game = new GameDefinition
+        {
+            GameTitle = "TestGame",
+            GamePath = _testBackupDirectory,
+            SavePath = _testBackupDirectory,
+            IsInstalled = true
+        };
+
+        // Act
+        var result = await _backupService.RestoreBackupAsync(game, @"C:\NonExistent\backup.zip");
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("not found");
     }
 
     #endregion Public Methods
